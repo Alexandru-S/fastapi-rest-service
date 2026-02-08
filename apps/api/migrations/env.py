@@ -12,7 +12,6 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from db.base import Base
-import models.hotel
 
 config = context.config
 
