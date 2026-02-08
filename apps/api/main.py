@@ -1,8 +1,14 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.session import get_session
+from models.hotel import Hotel, HotelAction
+from schemas.hotel import HotelCreate, HotelRead
 
 app = FastAPI()
 
@@ -37,3 +43,25 @@ def read_item(item_id: int, q: str | None = None):
 @app.put("/items/{item_id}")
 def update_item(item_id: int, item: Item):
     return {"item_name": item.name, "item_id": item_id}
+
+
+@app.post("/hotels", response_model=HotelRead, status_code=201)
+async def create_hotel(
+    payload: HotelCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    hotel = Hotel(
+        name=payload.name,
+        location_id=payload.location_id,
+        action=HotelAction.CREATE,
+    )
+    session.add(hotel)
+    await session.commit()
+    await session.refresh(hotel)
+    return hotel
+
+
+@app.get("/hotels", response_model=list[HotelRead])
+async def list_hotels(session: AsyncSession = Depends(get_session)):
+    result = await session.execute(select(Hotel))
+    return result.scalars().all()
