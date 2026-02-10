@@ -1,1 +1,5 @@
+anyio
+httpx
+pytest
+pytest-asyncio
 ruff
