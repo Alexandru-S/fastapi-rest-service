@@ -9,9 +9,9 @@ type Hotel = {
 };
 
 async function fetchHotels(): Promise<Hotel[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const baseUrl = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
   if (!baseUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is not set");
+    throw new Error("API_URL is not set");
   }
 
   const response = await fetch(`${baseUrl}/hotels`, { cache: "no-store" });
