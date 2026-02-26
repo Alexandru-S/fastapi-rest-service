@@ -7,8 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_session
+from models.guest import Guest
 from models.hotel import Hotel, HotelAction
 from models.room import Room
+from schemas.guest import GuestCreate, GuestRead
 from schemas.hotel import HotelCreate, HotelRead
 from schemas.room import RoomCreate, RoomRead
 
@@ -88,4 +90,27 @@ async def create_room(
 @app.get("/rooms", response_model=list[RoomRead])
 async def list_rooms(session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(Room))
+    return result.scalars().all()
+
+
+@app.post("/guests", response_model=GuestRead, status_code=201)
+async def create_guest(
+    payload: GuestCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    guest = Guest(
+        api_id=payload.api_id,
+        image=payload.image,
+        location=payload.location,
+        name=payload.name,
+    )
+    session.add(guest)
+    await session.commit()
+    await session.refresh(guest)
+    return guest
+
+
+@app.get("/guests", response_model=list[GuestRead])
+async def list_guests(session: AsyncSession = Depends(get_session)):
+    result = await session.execute(select(Guest))
     return result.scalars().all()
