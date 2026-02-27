@@ -4,12 +4,15 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql.ranges import Range
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_session
+from models.booking import Booking
 from models.guest import Guest
 from models.hotel import Hotel, HotelAction
 from models.room import Room
+from schemas.booking import BookingCreate, BookingRead
 from schemas.guest import GuestCreate, GuestRead
 from schemas.hotel import HotelCreate, HotelRead
 from schemas.room import RoomCreate, RoomRead
@@ -113,4 +116,30 @@ async def create_guest(
 @app.get("/guests", response_model=list[GuestRead])
 async def list_guests(session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(Guest))
+    return result.scalars().all()
+
+
+@app.post("/bookings", response_model=BookingRead, status_code=201)
+async def create_booking(
+    payload: BookingCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    booking = Booking(
+        guest_id=payload.guest_id,
+        room_id=payload.room_id,
+        tz_range=Range(
+            payload.tz_range.start,
+            payload.tz_range.end,
+            bounds="[)",
+        ),
+    )
+    session.add(booking)
+    await session.commit()
+    await session.refresh(booking)
+    return booking
+
+
+@app.get("/bookings", response_model=list[BookingRead])
+async def list_bookings(session: AsyncSession = Depends(get_session)):
+    result = await session.execute(select(Booking))
     return result.scalars().all()
